@@ -84,7 +84,6 @@ Your puzzle answer was 1704.
 Both parts of this puzzle are complete! They provide two gold stars: **
 #>
 
-
 $ExampleInput = @(
     199
     200
