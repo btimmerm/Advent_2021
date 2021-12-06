@@ -59,6 +59,10 @@ Suppose the lanternfish live forever and have unlimited food and space. Would th
 After 256 days in the example above, there would be a total of 26984457539 lanternfish!
 
 How many lanternfish would there be after 256 days?
+
+Your puzzle answer was 1689540415957.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
 #>
 
 $ExampleInput = @'
@@ -70,9 +74,9 @@ $PuzzleInput = @'
 '@
 
 Class LFSchool {
-    [int[]]$LifeCycle = @(0, 0, 0, 0, 0, 0, 0, 0, 0)
+    [int64[]]$LifeCycle = @(0, 0, 0, 0, 0, 0, 0, 0, 0)
     [int]$Days
-    [int]$Total
+    [int64]$Total
     LFSchool ([string]$Data) {
         ForEach ($Fish in $Data.Split(",")) {
             $this.AddFish($Fish)
@@ -82,7 +86,7 @@ Class LFSchool {
     [void] hidden AddFish ([int]$DaysRemaining) {
         $this.LifeCycle[$DaysRemaining] += 1
     }
-    [int] Live ([int]$Days) {
+    [int64] Live ([int]$Days) {
         If ($Days -gt 0) {
             ForEach ($Day in (1..$Days)) {
                 $Baby, $Others = $this.LifeCycle
@@ -116,3 +120,12 @@ $Answer_Puzzle_1
 
 # Example: 5934
 # Puzzle:  375482
+
+
+# Part 2
+
+$Answer_Puzzle_2 = $LanternFish.Live(256 - $LanternFish.Days)
+$Answer_Puzzle_2
+
+# Example: 26984457539
+# Puzzle:  1689540415957
