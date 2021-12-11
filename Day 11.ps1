@@ -296,6 +296,52 @@ After 100 steps, there have been a total of 1656 flashes.
 Given the starting energy levels of the dumbo octopuses in your cavern, simulate 100 steps. How many total flashes are there after 100 steps?
 
 Your puzzle answer was 1571.
+
+--- Part Two ---
+It seems like the individual flashes aren't bright enough to navigate. However, you might have a better option: the flashes seem to be synchronizing!
+
+In the example above, the first time all octopuses flash simultaneously is step 195:
+
+After step 193:
+5877777777
+8877777777
+7777777777
+7777777777
+7777777777
+7777777777
+7777777777
+7777777777
+7777777777
+7777777777
+
+After step 194:
+6988888888
+9988888888
+8888888888
+8888888888
+8888888888
+8888888888
+8888888888
+8888888888
+8888888888
+8888888888
+
+After step 195:
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+0000000000
+If you can calculate the exact moments when the octopuses will all flash simultaneously, you should be able to navigate through the cavern. What is the first step during which all octopuses flash?
+
+Your puzzle answer was 387.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
 #>
 
 #Region: Inputs
@@ -490,3 +536,86 @@ $Answer_Puzzle_1
 # Puzzle:  1571
 
 #EndRegion: Part 1
+
+
+#Region: Part 2
+
+$Data = $ExampleInput
+$Data = $PuzzleInput
+$Results = 0
+
+$Array = ForEach ($Row in ($Data.Split("`r`n") | Where-Object {$Null -notlike $_})) {
+    @($Row.ToCharArray() | Where-Object {$Null -notlike [string]$_} | ForEach-Object {[int][String]$_})
+}
+$Map = @{}
+$i = 0
+ForEach ($Y in 0..9) {
+    ForEach ($X in 0..9) {
+        $Octopus = "$($Y)_$($X)"
+        $Map.Add($Octopus,
+            [PSCustomObject]@{
+                Energy  = $Array[$i]
+                Flashed = $false
+            }
+        )
+        $i++
+    }
+}
+
+
+ForEach ($Steps in 1..500) {
+    Write-Verbose "Processing Step $Steps" -Verbose
+
+    # Add 1 to each
+    ForEach ($Y in 0..9) {
+        ForEach ($X in 0..9) {
+            $Octopus = "$($Y)_$($X)"
+            $Map[$Octopus].Energy = $Map[$Octopus].Energy + 1
+        }
+    }
+
+    # Add 1 to adjacent
+    Do {
+        ForEach ($Y in 0..9) {
+            ForEach ($X in 0..9) {
+                Add-Adjacent -X $X -Y $Y
+            }
+        }
+    } While (
+        $Map.Values | Where-Object {$_.Energy -gt 9 -and -not $_.Flashed }
+    )
+
+    # Count
+    If (@($Map.Values | Where-Object {$_.Flashed}).Count -eq 100) {
+        $Results = $Steps
+        Break
+    }
+
+    # Reset
+    ForEach ($Y in 0..9) {
+        ForEach ($X in 0..9) {
+            If ($Map["$($Y)_$($X)"].Flashed) {
+                $Map["$($Y)_$($X)"] = [PSCustomObject]@{
+                    Energy  = 0
+                    Flashed = $false
+                }
+            }
+        }
+    }
+
+    # View
+    ForEach ($Y in 0..9) {
+        $Row = ForEach ($X in 0..9) {
+            $Map["$($Y)_$($X)"].Energy
+        }
+        $Row -join ""
+    }
+}
+
+$Answer_Puzzle_2 = $Results
+$Answer_Puzzle_2
+
+# Example: 195
+# Puzzle:  387
+
+#EndRegion: Part 2
