@@ -96,6 +96,55 @@ start-RW
 How many paths through this cave system are there that visit small caves at most once?
 
 Your puzzle answer was 5333.
+
+--- Part Two ---
+After reviewing the available paths, you realize you might have time to visit a single small cave twice. Specifically, big caves can be visited any number of times, a single small cave can be visited at most twice, and the remaining small caves can be visited at most once. However, the caves named start and end can only be visited exactly once each: once you leave the start cave, you may not return to it, and once you reach the end cave, the path must end immediately.
+
+Now, the 36 possible paths through the first example above are:
+
+start,A,b,A,b,A,c,A,end
+start,A,b,A,b,A,end
+start,A,b,A,b,end
+start,A,b,A,c,A,b,A,end
+start,A,b,A,c,A,b,end
+start,A,b,A,c,A,c,A,end
+start,A,b,A,c,A,end
+start,A,b,A,end
+start,A,b,d,b,A,c,A,end
+start,A,b,d,b,A,end
+start,A,b,d,b,end
+start,A,b,end
+start,A,c,A,b,A,b,A,end
+start,A,c,A,b,A,b,end
+start,A,c,A,b,A,c,A,end
+start,A,c,A,b,A,end
+start,A,c,A,b,d,b,A,end
+start,A,c,A,b,d,b,end
+start,A,c,A,b,end
+start,A,c,A,c,A,b,A,end
+start,A,c,A,c,A,b,end
+start,A,c,A,c,A,end
+start,A,c,A,end
+start,A,end
+start,b,A,b,A,c,A,end
+start,b,A,b,A,end
+start,b,A,b,end
+start,b,A,c,A,b,A,end
+start,b,A,c,A,b,end
+start,b,A,c,A,c,A,end
+start,b,A,c,A,end
+start,b,A,end
+start,b,d,b,A,c,A,end
+start,b,d,b,A,end
+start,b,d,b,end
+start,b,end
+The slightly larger example above now has 103 paths through it, and the even larger example now has 3509 paths through it.
+
+Given these new rules, how many paths through this cave system are there?
+
+Your puzzle answer was 146553.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
 #>
 
 #Region: Inputs
@@ -179,6 +228,7 @@ Class Cave {
     [string]$Name
     [string[]]$Paths
     [int]$Visits
+    [int]$MaxVisits = 0
     [boolean]$Blocked = $False
     Cave ([string]$Name, [string]$Path) {
         $this.Name = $Name
@@ -188,6 +238,7 @@ Class Cave {
         $this.Name = $Hash["Name"]
         $this.Paths = $Hash["Paths"]
         $this.Visits = $Hash["Visits"]
+        $this.MaxVisits = $Hash["MaxVisits"]
         $this.Blocked = $Hash["Blocked"]
     }
     [void] AddPath ($Path) {
@@ -196,7 +247,13 @@ Class Cave {
     [string[]] Visit () {
         $this.Visits++
         If ($this.Name -ceq $this.Name.ToLower()) {
-            $this.Blocked = $True
+            If ($this.MaxVisits -gt 0) {
+                If ($this.Visits -eq 2) {
+                    $this.Blocked = $True
+                }
+            } Else {
+                $this.Blocked = $True
+            }
         }
 
         Return $this.Paths
@@ -299,3 +356,50 @@ $Answer_Puzzle_1
 # Puzzle:  5333
 
 #EndRegion: Part 1
+
+
+#Region: Part 2
+
+$Data = $ExampleInput
+$Data = $ExampleInput2
+$Data = $ExampleInput3
+$Data = $PuzzleInput
+
+$Caves = @{}
+$Data.Split("`r`n") | ForEach-Object {
+    # A-B
+    $CurPaths = $_.Split("-").Trim()
+    ForEach ($Cave in $CurPaths) {
+        $OtherCave = $CurPaths | Where-Object {$_ -ne $Cave}
+
+        $oCave = $Caves[$Cave]
+        If ($oCave) {
+            # Add Path
+            $oCave.AddPath($OtherCave)
+        } Else {
+            # Create new Cave
+            $Caves.Add($Cave , [Cave]::New($Cave, $OtherCave))
+        }
+    }
+}
+
+$SmallCaves = $Caves.GetEnumerator() | Where-Object {$_.Name -notin @("start", "end") -and $_.Name -ceq $_.Name.ToLower()} | Select-Object -ExpandProperty Name
+
+$Results = @()
+ForEach ($SmallCave in $SmallCaves) {
+    Write-Verbose "SmallCave: $(Get-Date)" -Verbose
+    $LoopCaves = Copy-Caves $Caves
+    $LoopCaves[$SmallCave].MaxVisits = 2
+    $CurPath = @("start")
+    $Results += Start-Walk -NextOptions $LoopCaves["start"].Visit() -CurPath $CurPath -Caves $LoopCaves #-Verbose
+}
+
+$Answer_Puzzle_2 = ($Results | Select-Object -Unique | Measure-Object).Count
+$Answer_Puzzle_2
+
+# Example: 36
+# Example: 103
+# Example: 3509
+# Puzzle: 146553
+
+#EndRegion: Part 2
