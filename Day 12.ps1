@@ -358,6 +358,79 @@ $Answer_Puzzle_1
 #EndRegion: Part 1
 
 
+#Region: Part 1.2
+
+Function New-Path {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory)]
+        [String[]]
+        $Path
+    )
+
+    $LastCaveName = $Path[-1]
+    $NextOptions = [String[]]$Caves[$LastCaveName]
+    ForEach ($Option in $NextOptions) {
+        # Need to start with fresh objects
+        $LoopPath = $Path #.Clone()
+
+        Write-Verbose "Checking $Option in $($LoopPath -join "-")"
+        If ($Option -eq 'end') {
+            $LoopPath += $Option
+            Write-Verbose "Found Path: $($LoopPath -join "-")"
+            $Global:PathCount++
+        } Else {
+            If ($LoopPath -contains $Option -and $Option -ceq $Option.ToLower()) {
+                # Already visited this cave.
+            } Else {
+                $LoopPath += $Option
+                New-Path -Path $LoopPath
+            }
+        }
+    }
+}
+
+$Data = $ExampleInput
+$Data = $ExampleInput2
+$Data = $ExampleInput3
+$Data = $PuzzleInput
+
+# Create hashtable of Caves with a valid path
+$Caves = @{}
+ForEach ($Path in ($Data -Split "\r?\n")) {
+    $Paths = $Path.Split("-").Trim()
+    ForEach ($Cave in $Paths) {
+        $OtherCave = $Paths | Where-Object {$_ -ne $Cave}
+
+        # The caves named start and end can only be visited once
+        If ($Cave -ne 'end' -and $OtherCave -ne 'start') {
+            If (-not $Caves[$Cave]) {
+                # Create new Cave
+                $Caves[$Cave] = @(, $OtherCave)
+            } Else {
+                # Add path if not included.
+                If ($Caves[$Cave] -notcontains $OtherCave) {
+                    $Caves[$Cave] += $OtherCave
+                }
+            }
+        }
+    }
+}
+
+$Global:PathCount = 0
+New-Path -Path 'start' #-Verbose
+
+$Answer_Puzzle_1 = $Global:PathCount
+$Answer_Puzzle_1
+
+# Example: 10
+# Example: 19
+# Example: 226
+# Puzzle:  5333
+
+#EndRegion: Part 1.2
+
+
 #Region: Part 2
 
 $Data = $ExampleInput
@@ -403,3 +476,98 @@ $Answer_Puzzle_2
 # Puzzle: 146553
 
 #EndRegion: Part 2
+
+
+#Region: Part 2.1
+
+Function New-Path2 {
+    [CmdletBinding()]
+    Param (
+        [Parameter(Mandatory)]
+        [String[]]
+        $Path,
+
+        [String]
+        $VisitingTwice
+    )
+
+    $LastCaveName = $Path[-1]
+    $NextOptions = [String[]]$Caves[$LastCaveName]
+    ForEach ($Option in $NextOptions) {
+        # Need to start with fresh objects
+        $LoopPath = $Path #.Clone()
+
+        Write-Verbose "Checking $($LoopPath -join "-")  $Option"
+        If ($Option -eq 'end') {
+            $LoopPath += $Option
+            Write-Verbose "Found Path: $($LoopPath -join "-")"
+            $Global:PathCount++
+            # Could Add Path to an object if necessary.
+        } Else {
+            $VisitedCount = @($LoopPath | Where-Object {$_ -eq $Option}).Count
+            If ($Option -ceq $Option.ToLower() -and $VisitedCount -ge 1) {
+                Write-Verbose "Small Cave: $Option"
+                If ($VisitedCount -gt 1) {
+                    # Visited 2 times. End here
+                    Write-Verbose "Small Cave: Visited $Option 2 times already."
+                } Else {
+                    Write-Verbose "Small Cave: Visiting $Option for the second time."
+                    # Visited once. Check if I plan to visit another cave 2 times.
+                    If ($null -like $VisitingTwice) {
+                        # It is OK to visit the second time.
+                        Write-Verbose "Small Cave: $Option can be visited 2 times continue."
+                        $LoopPath += $Option
+                        New-Path2 -Path $LoopPath -VisitingTwice $Option # Visit 2 prevents another small cave from being visited.
+                    } Else {
+                        # Another cave must have been visited 2 times.
+                        Write-Verbose "Small Cave: A cave other than $Option has been visited 2 times."
+                    }
+                }
+            } Else {
+                $LoopPath += $Option
+                New-Path2 -Path $LoopPath -VisitingTwice $VisitingTwice
+            }
+        }
+    }
+}
+
+
+$Data = $ExampleInput
+$Data = $ExampleInput2
+$Data = $ExampleInput3
+$Data = $PuzzleInput
+
+# Create hashtable of Caves with a valid path
+$Caves = @{}
+ForEach ($Path in ($Data -Split "\r?\n")) {
+    $Paths = $Path.Split("-").Trim()
+    ForEach ($Cave in $Paths) {
+        $OtherCave = $Paths | Where-Object {$_ -ne $Cave}
+
+        # The caves named start and end can only be visited once
+        If ($Cave -ne 'end' -and $OtherCave -ne 'start') {
+            If (-not $Caves[$Cave]) {
+                # Create new Cave
+                $Caves[$Cave] = @(, $OtherCave)
+            } Else {
+                # Add path if not included.
+                If ($Caves[$Cave] -notcontains $OtherCave) {
+                    $Caves[$Cave] += $OtherCave
+                }
+            }
+        }
+    }
+}
+
+$Global:PathCount = 0
+New-Path2 -Path 'start' #-Verbose
+
+$Answer_Puzzle_2 = $Global:PathCount
+$Answer_Puzzle_2
+
+# Example: 36
+# Example: 103
+# Example: 3509
+# Puzzle: 146553 # 426 seconds in pwsh, 1063 seconds in Windows PowerShell.
+
+#EndRegion: Part 2.1
