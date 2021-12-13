@@ -106,6 +106,14 @@ How many dots are visible after completing just the first fold instruction on yo
 
 Your puzzle answer was 765.
 
+--- Part Two ---
+Finish folding the transparent paper according to the instructions. The manual says the code is always eight capital letters.
+
+What code do you use to activate the infrared thermal imaging camera system?
+
+Your puzzle answer was RZKZLPGH.
+
+Both parts of this puzzle are complete! They provide two gold stars: **
 #>
 
 #Region: Inputs
@@ -1126,3 +1134,73 @@ $Answer_Puzzle_1
 
 #EndRegion: Part 1
 
+
+#Region: Part 2
+
+$Data = $ExampleInput
+$Data = $PuzzleInput
+
+$Points = @()
+$Folds = @()
+$Points += ForEach ($Instruction in ($Data -Split "\r?\n" | Where-Object {$_})) {
+    If ($Instruction -like "fold along*") {
+        $Folds += $Instruction
+    } Else {
+        @(, $Instruction.Split(",").Trim())
+    }
+}
+
+ForEach ($Fold in $Folds) {
+    # Fold paper
+    $Paper = @{}
+    If ($Fold -like "fold along y=*") {
+        $FoldLine = [Int]$Fold.Substring(13)
+        ForEach ($Point in $Points) {
+            $X, $Y = $Point
+            If ([int]$Y -le $FoldLine) {
+                $Paper["$($X)_$($Y)"] = @($X, $Y)
+            } Else {
+                $Paper["$($X)_$((2 * $FoldLine) - $Y)"] = @($X, ((2 * $FoldLine) - $Y))
+            }
+        }
+    } Else {
+        $FoldLine = [Int]$Fold.Substring(13)
+        ForEach ($Point in $Points) {
+            $X, $Y = $Point
+            If ([int]$X -le $FoldLine) {
+                $Paper["$($X)_$($Y)"] = @($X, $Y)
+            } Else {
+                $Paper["$((2 * $FoldLine) - $X)_$($Y)"] = @(((2 * $FoldLine) - $X), $Y)
+            }
+        }
+    }
+
+    # Update Points
+    $Points = ForEach ($Point in $Paper.GetEnumerator()) {
+        @(, $Point.Value)
+    }
+}
+
+# View Results
+$Xs = $Points | ForEach-Object {$_[0]} | Measure-Object -Maximum -Minimum
+$Ys = $Points | ForEach-Object {$_[1]} | Measure-Object -Maximum -Minimum
+$PHash = @{}
+ForEach ($P in $Points) {
+    $PHash["$($P[0])_$($P[1])"] = $True
+}
+
+ForEach ($Y in $Ys.Minimum..$Ys.Maximum) {
+    $Row = ForEach ($X in $Xs.Minimum..$Xs.Maximum) {
+        If ($PHash["$($X)_$($Y)"]) {
+            "#"
+        } Else {
+            " "
+        }
+    }
+    $Row -join ""
+}
+
+# Example: Box (5*5)
+# Puzzle:  RZKZLPGH
+
+#EndRegion: Part 2
